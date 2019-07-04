@@ -1,0 +1,100 @@
+service: lipsy-core
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  apiKeys:
+    - sls-apikey
+  environment:
+    AWS_REGION: ${ssm:region}
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:ListStreams
+      Resource:
+        - arn:aws:dynamodb:${ssm:region}:919018827940:table/${ssm:tableName}
+        - arn:aws:dynamodb:${ssm:region}:919018827940:table/${ssm:tableName}/index/${ssm:index}
+        - arn:aws:dynamodb:${ssm:region}:919018827940:table/${ssm:tableName}/index/${ssm:index2}
+        - arn:aws:dynamodb:${ssm:region}:919018827940:table/${ssm:tableName2}
+
+    - Effect: Allow
+      Action:
+        - SNS:CreatePlatformEndpoint
+        - SNS:Subscribe
+        - SNS:Publish
+        - SNS:GetEndpointAttributes
+      Resource:
+        - arn:aws:sns:us-east-1:919018827940:app/APNS/${ssm:platformName}
+        - arn:aws:sns:us-east-1:919018827940:${ssm:Topic}
+
+functions:
+  createQuizz:
+    handler: functions/createQuizz.handler
+    events:
+      - http:
+          path: quizz/create
+          method: POST
+          cors: true
+          private: true
+  createUser:
+    handler: functions/createUser.handler
+    events:
+      - http:
+          path: user/create
+          method: POST
+          cors: true
+          private: true
+  fetchQuizz:
+    handler: functions/fetchQuizz.handler
+    events:
+      - http:
+          path: quizz/{userId}/{quizzId}
+          method: GET
+          cors: true
+          private: true
+  createScore:
+    handler: functions/createScore.handler
+    events:
+      - http:
+          path: score/create
+          method: POST
+          cors: true
+          private: true
+  fetchLeaderboard:
+    handler: functions/fetchLeaderboard.handler
+    events:
+      - http:
+          path: leaderboard/{userId}
+          method: GET
+          cors: true
+          private: true
+  createEndpoint:
+    handler: functions/createEndpoint.handler
+    events:
+      - http:
+          path: endpoint/create
+          method: POST
+          cors: true
+          private: true
+  triggerStream:
+    handler: functions/triggerStream.handler
+    events:
+      - stream:
+          arn: arn:aws:dynamodb:us-east-1:919018827940:table/${ssm:tableName}/stream/2019-06-12T13:50:04.070"
+          batchSize: 1
+          startingPosition: LATEST
+  fetchRandomQuestion:
+    handler: functions/fetchRandomQuestion.handler
+    events:
+      - http:
+          path: randomQuestion
+          method: GET
+          cors: true
+          private: true
